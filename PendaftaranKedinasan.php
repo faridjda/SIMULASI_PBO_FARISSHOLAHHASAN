@@ -17,11 +17,12 @@ class PendaftaranKedinasan extends Pendaftaran {
     }
 
     // ========================================
-    // IMPLEMENTASI ABSTRACT METHOD
+    // POLIMORFISME - OVERRIDING hitungTotalBiaya()
+    // Kedinasan: Total Biaya = biayaPendaftaranDasar * 1.25
+    // (Surcharge/biaya tambahan 25% untuk pengurusan administrasi khusus)
     // ========================================
     public function hitungTotalBiaya() {
-        // Jalur Kedinasan: Gratis (Biaya ditanggung instansi sponsor)
-        return 0;
+        return $this->biayaPendaftaranDasar * 1.25;
     }
 
     public function tampilkanInfoJalur() {
@@ -48,19 +49,61 @@ class PendaftaranKedinasan extends Pendaftaran {
     }
 
     // ========================================
+    // QUERY SPESIFIK: SELECT WHERE KEDINASAN
+    // ========================================
+    public static function getDaftarKedinasan($pdo) {
+        try {
+            $query = "SELECT * FROM tabel_pendaftaran 
+                      WHERE jalur_pendaftaran = 'Kedinasan' 
+                      ORDER BY instansi_sponsor ASC, nama_calon ASC";
+            
+            $stmt = $pdo->prepare($query);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            die("Query Error: " . $e->getMessage());
+        }
+    }
+
+    // ========================================
+    // QUERY SPESIFIK: SELECT WHERE INSTANSI SPONSOR
+    // ========================================
+    public static function getDaftarKedinasanByInstansi($pdo, $instansi) {
+        try {
+            $query = "SELECT * FROM tabel_pendaftaran 
+                      WHERE jalur_pendaftaran = 'Kedinasan' 
+                      AND instansi_sponsor = ? 
+                      ORDER BY nama_calon ASC";
+            
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([$instansi]);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            die("Query Error: " . $e->getMessage());
+        }
+    }
+
+    // ========================================
     // INFO LENGKAP
     // ========================================
     public function infoLengkap() {
+        $surcharge = $this->biayaPendaftaranDasar * 0.25;
         return "
-            ID: {$this->id_pendaftaran}
-            Nama: {$this->nama_calon}
-            Asal Sekolah: {$this->asal_sekolah}
-            Nilai Ujian: {$this->nilai_ujian}
-            Prodi: {$this->pilihanProdi}
-            Lokasi Kampus: {$this->lokasiKampus}
-            SK Ikatan Dinas: {$this->skIkatanDinas}
+            ================================
+            ID PENDAFTARAN: {$this->id_pendaftaran}
+            NAMA: {$this->nama_calon}
+            ASAL SEKOLAH: {$this->asal_sekolah}
+            NILAI UJIAN: {$this->nilai_ujian}
+            PRODI: {$this->pilihanProdi}
+            LOKASI KAMPUS: {$this->lokasiKampus}
+            SK IKATAN DINAS: {$this->skIkatanDinas}
             {$this->tampilkanInfoJalur()}
-            Total Biaya: GRATIS (Ditanggung Instansi)
+            BIAYA DASAR: Rp " . number_format($this->biayaPendaftaranDasar, 0, ',', '.') . "
+            SURCHARGE (25%): Rp " . number_format($surcharge, 0, ',', '.') . "
+            TOTAL BIAYA: Rp " . number_format($this->hitungTotalBiaya(), 0, ',', '.') . "
+            ================================
         ";
     }
 }
